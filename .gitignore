@@ -1,0 +1,13 @@
+bin/
+.settings/
+.classpath
+.project
+test.db
+HolyAPI.java
+src/javax/
+src/org/json/
+*.db
+/src/de/theholyexception/holyapi/cryptography/CryptInputStreamReader.java
+/src/de/theholyexception/holyapi/CloudFlareAPI.java
+/src/de/theholyexception/holyapi/datastorage/NBTDecoder.java
+/src/de/theholyexception/holyapi/util/expiringmap/
