@@ -153,11 +153,23 @@ public class SQLiteInterface extends DataBaseInterface {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		multiThreadManager.putJob(executeQueryJob, query, consumer);
 	}
+	
+	@Override
+	public void executeQueryAsync(Consumer<ResultSet> consumer, int groupID, String query) {
+		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
+		multiThreadManager.putJob(executeQueryJob, query, groupID, new Object[] {consumer});
+	}
 
 	@Override
 	public void executeQuerySafeAsync(Consumer<ResultSet> consumer, String query, String... data) {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		multiThreadManager.putJob(executeQueryJob, query, consumer, data);
+	}
+	
+	@Override
+	public void executeQuerySafeAsync(Consumer<ResultSet> consumer, int groupID, String query, String... data) {
+		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
+		multiThreadManager.putJob(executeQueryJob, query, groupID, new Object[] {consumer, data});
 	}
 	//endregion
 	
@@ -205,9 +217,21 @@ public class SQLiteInterface extends DataBaseInterface {
 	}
 	
 	@Override
+	public void executeAsync(int groupID, String query) {
+		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
+		multiThreadManager.putJob(executeJob, groupID, new Object[] {query});
+	}
+	
+	@Override
 	public void executeSafeAsync(String query, String... data) {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		multiThreadManager.putJob(executeJob, query, data);
+	}
+	
+	@Override
+	public void executeSafeAsync(int groupID, String query, String... data) {
+		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
+		multiThreadManager.putJob(executeJob, groupID, new Object[] {query, data});
 	}
 	//endergion
 	

@@ -21,7 +21,7 @@ public abstract class DataBaseInterface extends DataInterface {
 	
 	protected boolean autoCommit = true;
 	protected boolean allowAsync = false;
-	protected MultiThreadManager multiThreadManager;
+	protected MultiThreadManager multiThreadManager = null;
 
 	protected DataBaseInterface() {
 	}
@@ -69,17 +69,36 @@ public abstract class DataBaseInterface extends DataInterface {
 			ex.printStackTrace();
 		}
 	}	
+	
+	@Override
+	public void closeMTM() {
+		if (allowAsync)
+			multiThreadManager.stop();
+	}
+
+	@Override
+	public MultiThreadManager getMTM() {
+		return allowAsync ? multiThreadManager : null;
+	}
+	
+	public Logger getLogger() {
+		return logger;
+	}
 
 	
 	public abstract ResultSet 	executeQuery			(String query);
 	public abstract ResultSet 	executeQuerySafe		(String query, String... data);
 	public abstract void 		executeQueryAsync		(Consumer<ResultSet> consumer, String query);
+	public abstract void 		executeQueryAsync		(Consumer<ResultSet> consumer, int groupID, String query);
 	public abstract void 		executeQuerySafeAsync	(Consumer<ResultSet> consumer, String query, String... data);
+	public abstract void 		executeQuerySafeAsync	(Consumer<ResultSet> consumer, int groupID, String query, String... data);
 	
 	public abstract void        execute                 (String query);
 	public abstract void        executeSafe             (String query, String... data);
 	public abstract void        executeAsync            (String query);
+	public abstract void        executeAsync            (int groupID, String query);
 	public abstract void        executeSafeAsync        (String query, String... data);
+	public abstract void        executeSafeAsync        (int groupID, String query, String... data);
 	
 	public abstract void 		createTable				(TableModel model, String name);
 	public abstract void		updateTable				(TableModel model, String name);

@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
@@ -53,6 +55,20 @@ public class MySQLInterface extends DataBaseInterface {
 		this.database = database;
 		this.username = username;
 		this.password = password;
+		
+		new Timer().schedule(new TimerTask() {
+			
+			@Override
+			public void run() {
+				try {
+					if (connection.isClosed()) {
+						connect();
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}, 10000, 10000);
 	}
 	
 	
@@ -149,9 +165,21 @@ public class MySQLInterface extends DataBaseInterface {
 	}
 
 	@Override
+	public void executeQueryAsync(Consumer<ResultSet> consumer, int groupID, String query) {
+		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
+		multiThreadManager.putJob(executeQueryJob, groupID, new Object[] {query, consumer});
+	}
+
+	@Override
 	public void executeQuerySafeAsync(Consumer<ResultSet> consumer, String query, String... data) {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		multiThreadManager.putJob(executeQueryJob, query, consumer, data);
+	}
+
+	@Override
+	public void executeQuerySafeAsync(Consumer<ResultSet> consumer, int groupID, String query, String... data) {
+		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
+		multiThreadManager.putJob(executeQueryJob, query, groupID, new Object[3]);
 	}
 	//endregion
 	
@@ -199,11 +227,23 @@ public class MySQLInterface extends DataBaseInterface {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		multiThreadManager.putJob(executeJob, query);
 	}
+
+	@Override
+	public void executeAsync(int groupID, String query) {
+		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
+		multiThreadManager.putJob(executeJob, groupID, new Object[] {query});
+	}
 	
 	@Override
 	public void executeSafeAsync(String query, String... data) {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		multiThreadManager.putJob(executeJob, query, data);
+	}
+	
+	@Override
+	public void executeSafeAsync(int groupID, String query, String... data) {
+		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
+		multiThreadManager.putJob(executeJob, groupID, new Object[] {query, data});
 	}
 	//endregion
 
