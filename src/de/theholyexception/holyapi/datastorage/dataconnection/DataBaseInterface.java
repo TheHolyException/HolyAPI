@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -103,5 +105,27 @@ public abstract class DataBaseInterface extends DataInterface {
 	public abstract void 		createTable				(TableModel model, String name);
 	public abstract void		updateTable				(TableModel model, String name);
 	public abstract TableModel	getTable				(String name);
+	
+	class ExecuteBuilder {
+		
+		String sql;
+		private boolean async = false;
+		private List<String> safeArgs;
+		public ExecuteBuilder(String sql) {
+			this.sql = sql;
+			safeArgs = new ArrayList<>();
+		}
+		
+		public ExecuteBuilder async() {
+			if (!allowAsync) throw new IllegalStateException("Async is disabled!");
+			this.async = true;
+			return this;
+		}
+		
+	}
+	
+	class QueryBuilder {
+		
+	}
 	
 }

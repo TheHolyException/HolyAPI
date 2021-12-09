@@ -21,11 +21,10 @@ public class ConfigProperty implements FileConfiguration {
 		this.headLine = (headline == null ? "HolyAPI ConfigProperty" : headLine);
 	}	
 	
-	public void createNew(String pathToDefaultConfig) {
+	public void createNew(InputStream stream) {
 		try {
 			properties = new SortedProperties();
-			InputStream fileStream = ConfigProperty.class.getClassLoader().getResourceAsStream(pathToDefaultConfig);
-			properties.load(fileStream);
+			properties.load(stream);
 			
 			FileOutputStream fos = new FileOutputStream(file);
 			properties.store(fos, headLine);
@@ -36,9 +35,9 @@ public class ConfigProperty implements FileConfiguration {
 		}		
 	}
 	
-	public boolean createNewIfNotExists(String pathToDefaultConfig) {
+	public boolean createNewIfNotExists(InputStream stream) {
 		if (!file.exists()) {
-			createNew(pathToDefaultConfig);
+			createNew(stream);
 			return true;
 		}
 		return false;
