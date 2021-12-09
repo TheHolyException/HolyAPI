@@ -1,6 +1,14 @@
-package de.theholyexception.holyapi.integrations;
+package de.theholyexception.holyapi.integrations.spigot;
 
-import org.fusesource.jansi.Ansi.Color;
+import java.lang.reflect.Field;
+import java.util.UUID;
+
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
+
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -10,6 +18,24 @@ import net.md_5.bungee.api.chat.TextComponent;
 
 public class SpigotUtils {
 	
+	public static ItemStack getHead(String texture) {
+		ItemStack item = new ItemStack(Material.LEGACY_SKULL_ITEM, 1, (short) 3);
+		GameProfile vplayer = new GameProfile(UUID.randomUUID(), null);
+		vplayer.getProperties().put("textures", new Property("textures", texture));
+		SkullMeta meta = (SkullMeta) item.getItemMeta();
+		Field profileField = null;
+
+		try {
+			profileField = meta.getClass().getDeclaredField("profile");
+			profileField.setAccessible(true);
+			profileField.set(meta, vplayer);
+		} catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e1) {
+			e1.printStackTrace();
+		}
+
+		item.setItemMeta(meta);
+		return item;
+	}
 	
 	public static class MessageBuilder {
 		
