@@ -13,3 +13,4 @@ src/org/json/
 /src/de/theholyexception/holyapi/util/expiringmap/
 *.class
 /target/
+/.idea/
