@@ -11,3 +11,5 @@ src/org/json/
 /src/de/theholyexception/holyapi/CloudFlareAPI.java
 /src/de/theholyexception/holyapi/datastorage/NBTDecoder.java
 /src/de/theholyexception/holyapi/util/expiringmap/
+*.class
+/target/
