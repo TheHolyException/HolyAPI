@@ -102,23 +102,28 @@ public abstract class DataBaseInterface {
 		return logger;
 	}
 
+	public Connection getConnection() {
+		return connection;
+	}
+
 	public ExecutorHandler getExecutorHandler() {
 		return executorHandler;
 	}
 
 	public abstract ResultSet 	executeQuery			(String query);
-	public abstract ResultSet 	executeQuerySafe		(String query, String... data);
+	public abstract ResultSet 	executeQuerySafe		(String query, Object... data);
 	public abstract void 		executeQueryAsync		(Consumer<ResultSet> consumer, String query);
 	public abstract void 		executeQueryAsync		(Consumer<ResultSet> consumer, int groupID, String query);
-	public abstract void 		executeQuerySafeAsync	(Consumer<ResultSet> consumer, String query, String... data);
-	public abstract void 		executeQuerySafeAsync	(Consumer<ResultSet> consumer, int groupID, String query, String... data);
+	public abstract void 		executeQuerySafeAsync	(Consumer<ResultSet> consumer, String query, Object... data);
+	public abstract void 		executeQuerySafeAsync	(Consumer<ResultSet> consumer, int groupID, String query, Object... data);
 	
 	public abstract void        execute                 (String query);
-	public abstract void        executeSafe             (String query, String... data);
+	public abstract void        executeSafe             (String query, Object... data);
 	public abstract void        executeAsync            (String query);
 	public abstract void        executeAsync            (int groupID, String query);
-	public abstract void        executeSafeAsync        (String query, String... data);
-	public abstract void        executeSafeAsync        (int groupID, String query, String... data);
+	public abstract void        executeSafeAsync        (String query, Object... data);
+	public abstract void        executeSafeAsync        (int groupID, String query, Object... data);
+
 	
 	protected class ExecuteBuilder {
 		private boolean async = false;

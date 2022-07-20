@@ -102,7 +102,7 @@ public class MySQLInterface extends DataBaseInterface {
 	}
 
 	@Override
-	public ResultSet executeQuerySafe(String query, String... data) {
+	public ResultSet executeQuerySafe(String query, Object... data) {
 		checkConnection();
 		int questionMarkCount = 0;
 		for (int i = 0; i < query.length(); i ++)
@@ -114,7 +114,7 @@ public class MySQLInterface extends DataBaseInterface {
 		try {
 			PreparedStatement statement = connection.prepareStatement(query, resultSetType, resultSetConcurrency);
 			for (int i = 0; i < data.length; i ++) {
-				statement.setString(i+1, data[i]);
+				statement.setString(i+1, data[i].toString());
 			}
 
 			result = statement.executeQuery();
@@ -141,14 +141,14 @@ public class MySQLInterface extends DataBaseInterface {
 	}
 
 	@Override
-	public void executeQuerySafeAsync(Consumer<ResultSet> consumer, String query, String... data) {
+	public void executeQuerySafeAsync(Consumer<ResultSet> consumer, String query, Object... data) {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		checkConnection();
 		executorHandler.putTask(new ExecutorTask(() -> consumer.accept(executeQuerySafe(query, data))));
 	}
 
 	@Override
-	public void executeQuerySafeAsync(Consumer<ResultSet> consumer, int groupID, String query, String... data) {
+	public void executeQuerySafeAsync(Consumer<ResultSet> consumer, int groupID, String query, Object... data) {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		checkConnection();
 		executorHandler.putTask(new ExecutorTask(() -> consumer.accept(executeQuerySafe(query, data)), groupID));
@@ -171,7 +171,7 @@ public class MySQLInterface extends DataBaseInterface {
 	}
 
 	@Override
-	public void executeSafe(String query, String... data) {
+	public void executeSafe(String query, Object... data) {
 		checkConnection();
 		int questionMarkCount = 0;
 		for (int i = 0; i < query.length(); i ++)
@@ -182,7 +182,7 @@ public class MySQLInterface extends DataBaseInterface {
 		try {
 			PreparedStatement statement = connection.prepareStatement(query, resultSetType, resultSetConcurrency);
 			for (int i = 0; i < data.length; i ++) {
-				statement.setString(i+1, data[i]);
+				statement.setString(i+1, data[i].toString());
 			}
 
 			statement.execute();
@@ -211,19 +211,18 @@ public class MySQLInterface extends DataBaseInterface {
 	}
 	
 	@Override
-	public void executeSafeAsync(String query, String... data) {
+	public void executeSafeAsync(String query, Object... data) {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		checkConnection();
 		executorHandler.putTask(new ExecutorTask(() -> executeSafe(query, data)));
 	}
 	
 	@Override
-	public void executeSafeAsync(int groupID, String query, String... data) {
+	public void executeSafeAsync(int groupID, String query, Object... data) {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		checkConnection();
 		executorHandler.putTask(new ExecutorTask(() -> executeSafe(query, data)), groupID);
 	}
 	//endregion
-	
 
 }
