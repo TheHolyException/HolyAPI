@@ -1,5 +1,12 @@
 package de.theholyexception.holyapi.util.backuprecover;
 
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
+import net.lingala.zip4j.io.inputstream.ZipInputStream;
+import net.lingala.zip4j.io.outputstream.ZipOutputStream;
+import net.lingala.zip4j.model.FileHeader;
+import net.lingala.zip4j.model.LocalFileHeader;
+import net.lingala.zip4j.model.ZipParameters;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
@@ -11,9 +18,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 public class BackupManager {
 
@@ -36,6 +40,19 @@ public class BackupManager {
         if (!sourceFolder.exists()) throw new IllegalArgumentException("SourceFolder not exists");
         if (!outputFolder.exists()) outputFolder.mkdirs();
         scanSourceDirectory();
+    }
+
+    public static Map<String, List<BackupItemInfo>> scanSourceDirectory(File sourceFolder, Function<String, BackupItemInfo> resolver) {
+        List<BackupItemInfo> tempItems = new ArrayList<>();
+        for (File file : Objects.requireNonNull(sourceFolder.listFiles())) {
+            BackupItemInfo item = resolver.apply(file.getName());
+            if (!item.isValid()) continue;
+            tempItems.add(item);
+        }
+
+        return tempItems.stream()
+            .sorted(Comparator.comparing(BackupItemInfo::getTimeStamp))
+            .collect(Collectors.groupingBy(BackupItemInfo::getPath));
     }
 
     private void scanSourceDirectory() {
@@ -97,7 +114,16 @@ public class BackupManager {
         throw new NotImplementedException();
     }
 
-    public File restore(String path, long timestamp) {
+
+    public File restore(BackupItem item) {
+        return restore(item.getPath(), item.getTimeStamp(), null);
+    }
+
+    public File restore(BackupItemInfo itemInfo) {
+        return restore(itemInfo.getPath(), itemInfo.getTimeStamp(), null);
+    }
+
+    public File restore(String path, long timestamp, char[] password) {
         List<BackupItem> localItems = items.get(path);
         if (localItems == null) throw new IllegalArgumentException("Invalid path");
 
@@ -110,6 +136,7 @@ public class BackupManager {
         BackupItemInfo itemInfo = item.get().getItemInfo();
         File outputFile = new File(outputFolder, itemInfo.getPath() + " " + itemInfo.getTimeStamp() + ".zip");
 
+        /*
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile))) {
             BackupItem i = item.get();
             List<String> blackList = new ArrayList<>();
@@ -122,11 +149,55 @@ public class BackupManager {
             ex.printStackTrace();
         }
 
+         */
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile))) {
+            BackupItem i = item.get();
+            List<String> blackList = new ArrayList<>();
+
+            do {
+                writeZipFile(zos, i, password, blackList);
+                i = i.getLastBackup();
+            } while (i != null);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
         System.gc();
         System.runFinalization();
         return outputFile;
     }
 
+    private void writeZipFile(ZipOutputStream zos, BackupItem item, char[] password, List<String> blacklist) throws ZipException {
+        System.out.println(item);
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(item.getFile()), password)) {
+
+            LocalFileHeader localFileHeader;
+            byte[] buffer = new byte[8192];
+            int l;
+
+            while((localFileHeader = zis.getNextEntry()) != null) {
+                if (blacklist.contains(localFileHeader.getFileName())) continue;
+                ZipParameters parameters = new ZipParameters();
+                parameters.setFileNameInZip(localFileHeader.getFileName());
+                parameters.setLastModifiedFileTime(localFileHeader.getLastModifiedTime());
+                parameters.setFileComment("from " + item.getFile());
+                zos.putNextEntry(parameters);
+                while((l = zis.read(buffer)) != -1) {
+                    zos.write(buffer, 0, l);
+                }
+                zos.closeEntry();
+                blacklist.add(localFileHeader.getFileName());
+            }
+
+
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    /*
     private void writeZipFile(ZipOutputStream zos, BackupItem item, List<String> blackList) {
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(item.getFile()))) {
 
@@ -159,38 +230,68 @@ public class BackupManager {
 
     }
 
-    //region Resolvers
+     */
 
-    public static final SimpleDateFormat CORBINAN_DE_SDF = new SimpleDateFormat("yyyy-MM-dd HH;mm;ss");
-    public static final Function<String, BackupItemInfo> CORBINAN_DE = fileName -> {
-        String[] segments = fileName.split(" ");
-        if (segments.length < 4) return null;
+    public static class Resolvers {
 
-        BackupType type;
-        switch (segments[3].replace(".zip","").replace("(","").replace(")", "")) {
-            case "Inkrementell":
-                type = BackupType.INCREMENTAL;
-                break;
-            case "Vollständig":
-                type = BackupType.FULL;
-                break;
-            case "Differentiell":
-                type = BackupType.DIFFERENTIAL;
-                break;
-            default: type = null;
-        }
+        public static final SimpleDateFormat CORBINAN_DE_SDF = new SimpleDateFormat("yyyy-MM-dd HH;mm;ss");
+        public static final Function<String, BackupItemInfo> CORBINAN_DE = fileName -> {
+            String[] segments = fileName.split(" ");
+            if (segments.length < 4) return null;
 
-        long timeStamp = -1;
-        try {
-            timeStamp = CORBINAN_DE_SDF.parse(segments[1] + " " + segments[2]).getTime();
-        } catch (ParseException ex) {
-            ex.printStackTrace();
-            return null;
-        }
+            BackupType type;
+            switch (segments[3].replace(".zip","").replace("(","").replace(")", "")) {
+                case "Inkrementell":
+                    type = BackupType.INCREMENTAL;
+                    break;
+                case "Vollständig":
+                    type = BackupType.FULL;
+                    break;
+                case "Differentiell":
+                    type = BackupType.DIFFERENTIAL;
+                    break;
+                default: type = null;
+            }
 
-        return new BackupItemInfo(segments[0], type, timeStamp);
-    };
+            long timeStamp = -1;
+            try {
+                timeStamp = CORBINAN_DE_SDF.parse(segments[1] + " " + segments[2]).getTime();
+            } catch (ParseException ex) {
+                ex.printStackTrace();
+                return null;
+            }
 
-    //endregion Resolvers
+            return new BackupItemInfo(segments[0], type, timeStamp);
+        };
+
+        public static final Function<String, BackupItemInfo> CORBINAN_EN = fileName -> {
+            String[] segments = fileName.split(" ");
+            if (segments.length < 4) return null;
+
+            BackupType type;
+            switch (segments[3].replace(".zip","").replace("(","").replace(")", "")) {
+                case "Incremental":
+                    type = BackupType.INCREMENTAL;
+                    break;
+                case "Full":
+                    type = BackupType.FULL;
+                    break;
+                case "Differential":
+                    type = BackupType.DIFFERENTIAL;
+                    break;
+                default: type = null;
+            }
+
+            long timeStamp = -1;
+            try {
+                timeStamp = CORBINAN_DE_SDF.parse(segments[1] + " " + segments[2]).getTime();
+            } catch (ParseException ex) {
+                ex.printStackTrace();
+                return null;
+            }
+
+            return new BackupItemInfo(segments[0], type, timeStamp);
+        };
+    }
 
 }

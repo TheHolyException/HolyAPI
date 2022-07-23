@@ -6,7 +6,7 @@
 
     <groupId>de.theholyexception</groupId>
     <artifactId>HolyAPI</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.1.7</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -74,12 +74,42 @@
             <version>1.1.1</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.70</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/io.github.java-native/jssc -->
+        <dependency>
+            <groupId>io.github.java-native</groupId>
+            <artifactId>jssc</artifactId>
+            <version>2.9.4</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.8.1</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <version>4.4.5</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/net.lingala.zip4j/zip4j -->
+        <dependency>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+            <version>2.11.1</version>
+        </dependency>
+
+
 
 
     </dependencies>
