@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Collection;
 
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 public class JSONArrayContainer extends JSONContainer implements Serializable, Cloneable {
 
@@ -36,7 +37,7 @@ public class JSONArrayContainer extends JSONContainer implements Serializable, C
 	}
 	
 	public JSONObjectContainer getObjectContainer(int index) {
-		return (JSONObjectContainer) data.get(index);
+		return new JSONObjectContainer((JSONObject)this.data.get(index));
 	}
 	
 	public JSONArrayContainer getArrayContainer(int index) {
