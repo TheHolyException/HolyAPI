@@ -72,4 +72,16 @@ public class ExecutorHandler {
          executorService.shutdownNow();
     }
 
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
+    public int getLastTaskIdentifier() {
+        return lastTaskIdentifier;
+    }
+
+    public void updateExecutorService(ExecutorService executorService) {
+        if (areThreadsRunning()) throw new IllegalStateException("There are still threads running, close them with closeForce()");
+        this.executorService = executorService;
+    }
 }

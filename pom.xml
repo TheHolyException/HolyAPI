@@ -6,7 +6,7 @@
 
     <groupId>de.theholyexception</groupId>
     <artifactId>HolyAPI</artifactId>
-    <version>1.1.8</version>
+    <version>1.1.20</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -16,7 +16,7 @@
     <distributionManagement>
         <repository>
             <id>minebug</id>
-            <url>http://minebug.de:3310/releases</url>
+            <url>https://repo.minebug.de/releases</url>
         </repository>
     </distributionManagement>
 
@@ -109,9 +109,5 @@
             <version>2.11.1</version>
         </dependency>
 
-
-
-
     </dependencies>
-
 </project>
