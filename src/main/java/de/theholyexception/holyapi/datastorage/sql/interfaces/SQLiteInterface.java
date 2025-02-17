@@ -10,7 +10,9 @@ import java.sql.Statement;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
+import de.theholyexception.holyapi.datastorage.sql.Result;
 import de.theholyexception.holyapi.util.ExecutorTask;
+import de.theholyexception.holyapi.util.NotImplementedException;
 
 public class SQLiteInterface extends DataBaseInterface {
 
@@ -209,6 +211,28 @@ public class SQLiteInterface extends DataBaseInterface {
 		if (!allowAsync) throw new IllegalStateException("Async is disabled!");
 		checkConnection();
 		executorHandler.putTask(new ExecutorTask(() -> executeSafe(query, data)), groupID);
+	}
+	//endregion
+
+	//region results
+	@Override
+	public Result getResult(String query) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public Result getResultSafe(String query, Object... data) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public void getResultAsync(Consumer<Result> results, String query) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public void getResultSafeAsync(Consumer<Result> results, String query, String... data) {
+		throw new NotImplementedException();
 	}
 	//endregion
 

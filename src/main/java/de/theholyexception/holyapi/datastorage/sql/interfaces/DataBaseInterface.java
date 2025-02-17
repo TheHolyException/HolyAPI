@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
+import de.theholyexception.holyapi.datastorage.sql.Result;
 import de.theholyexception.holyapi.util.ExecutorHandler;
 
 public abstract class DataBaseInterface {
@@ -123,6 +124,11 @@ public abstract class DataBaseInterface {
 	public abstract void        executeAsync            (int groupID, String query);
 	public abstract void        executeSafeAsync        (String query, Object... data);
 	public abstract void        executeSafeAsync        (int groupID, String query, Object... data);
+
+	public abstract Result getResult			(String query);
+	public abstract Result getResultSafe   		(String query, Object... data);
+	public abstract void getResultAsync      	(Consumer<Result> results, String query);
+	public abstract void getResultSafeAsync  	(Consumer<Result> results, String query, String... data);
 
 	
 	protected class ExecuteBuilder {
