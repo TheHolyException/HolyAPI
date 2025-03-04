@@ -9,9 +9,9 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -19,9 +19,7 @@ import org.json.simple.parser.JSONParser;
 public class JSONReader {
 
 	protected static Map<JSONReader, File> autoSaves = new HashMap<>();
-	private static Logger logger = Logger.getLogger(JSONReader.class.getName());
-	
-	
+
 	public static JSONContainer readFile(File file) {
 		try {
 			Object object;
@@ -29,17 +27,18 @@ public class JSONReader {
 				object = new JSONObject();
 				
 			} else {
-				FileReader reader = new FileReader(file);
-				object = new JSONParser().parse(reader);
+				try (FileReader reader = new FileReader(file)) {
+					object = new JSONParser().parse(reader);
+				}
 			}
 			if (object instanceof JSONObject) {
 				return new JSONObjectContainer((JSONObject)object);
 			} else if (object instanceof JSONArray) {
 				return new JSONArrayContainer((JSONArray)object);
 			}
-			logger.log(Level.FINER, "Failed to parse File");
+			LoggerProxy.log(LogLevel.DEBUG, "Failed to parse File");
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR, "Failed to parse File", ex);
 		}
 		return null;
 	}
@@ -52,17 +51,16 @@ public class JSONReader {
 			} else if (object instanceof JSONArray) {
 				return new JSONArrayContainer((JSONArray)object);
 			}
-			logger.log(Level.FINER, "Failed to parse File");
+			LoggerProxy.log(LogLevel.DEBUG, "Failed to parse string");
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR, "Failed to parse string", ex);
 		}
 		return null;
 	}
 	
 	public static JSONContainer readURL(URL url) {
-		try {
-			InputStream is 			= url.openStream();
-			BufferedReader reader 	= new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+		try (InputStream is 			= url.openStream();
+			 BufferedReader reader 	= new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")))) {
 			StringBuilder builder 	= new StringBuilder();
 			int inputLine;
 			while((inputLine = reader.read()) != -1) {
@@ -74,9 +72,9 @@ public class JSONReader {
 			} else if (object instanceof JSONArray) {
 				return new JSONArrayContainer((JSONArray)object);
 			}
-			logger.log(Level.FINER, "Failed to parse File");
+			LoggerProxy.log(LogLevel.DEBUG, "Failed to parse URL");
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR, "Failed to parse URL", ex);
 		}
 		return null;
 	}

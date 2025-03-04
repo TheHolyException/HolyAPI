@@ -1,11 +1,13 @@
 package de.theholyexception.holyapi.util.drophandler;
 
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
+
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.*;
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.List;
 
 public class DropHandler implements DropTargetListener {
@@ -48,14 +50,12 @@ public class DropHandler implements DropTargetListener {
             DataFlavor d = flavors[i];
             try {
                 System.out.println(transferable.getTransferData(d));
-                //ByteBuffer buffer = (ByteBuffer) transferable.getTransferData(d);
-                //System.out.println(new String(buffer.array()));
                 if (d.equals(DataFlavor.javaFileListFlavor)) {
                     List<File> fileList = (List<File>) transferable.getTransferData(d);
                     action.apply(new DropInformation(fileList, dropPosX, dropPosY));
                 }
             }catch(Exception e){
-                e.printStackTrace();
+                LoggerProxy.log(LogLevel.ERROR, "Failed to drop file", e);
             }
         }
         event.dropComplete(true);

@@ -13,12 +13,6 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
 public class PasswordHashing {
-
-	/*
-	    String a = passwordHashing.hash("12345678".toCharArray());
-		System.out.println(a);
-		System.out.println(passwordHashing.authenticate("12345678".toCharArray(), a));
-	 */
 	
 	private static final String ID = "$THE1.1$";
 	private static final String ALGORITHM = "PBKDF2WithHmacSHA1";

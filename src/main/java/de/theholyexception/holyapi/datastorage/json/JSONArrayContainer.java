@@ -10,7 +10,7 @@ public class JSONArrayContainer extends JSONContainer implements Serializable, C
 
 	private static final long serialVersionUID = -3897611615093771174L;
 	
-	private JSONArray data;
+	private final JSONArray data;
 	
 	protected JSONArrayContainer(JSONArray data) {
 		this.data = data;

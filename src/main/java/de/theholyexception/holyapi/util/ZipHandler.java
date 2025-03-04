@@ -11,8 +11,6 @@ import java.util.zip.ZipOutputStream;
 public class ZipHandler {
 
 	public static void zipFile(File source, File target) throws IOException {
-		target.createNewFile();
-
 		try (FileOutputStream fos = new FileOutputStream(target);
 			 ZipOutputStream zos = new ZipOutputStream(fos);
 			 FileInputStream fis = new FileInputStream(target);){
@@ -28,17 +26,16 @@ public class ZipHandler {
 	}
 	
 	public static void zipFolder(File sourceFolder, File target) throws IOException {
-		target.createNewFile();
-		ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(target));
-		for (File files : sourceFolder.listFiles()) {
-			zipFolderREC(sourceFolder, files, target, zos);
+		try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(target.toPath()));) {
+			for (File files : sourceFolder.listFiles()) {
+				zipFolderREC(sourceFolder, files, target, zos);
+			}
 		}
-		zos.close();
 	}
 	
 	private static void zipFolderREC(File sourceFolder, File currentFolder, File target, ZipOutputStream zos) throws IOException {
 		String path = currentFolder.getAbsolutePath().replace(sourceFolder.getAbsolutePath(), "");
-		if (path.length() > 0) path = path.substring(1);
+		if (!path.isEmpty()) path = path.substring(1);
 		if (currentFolder.isDirectory()) {
 			path = path + (path.endsWith("/") ? "" : "/");
 			zos.putNextEntry(new ZipEntry(path));
@@ -54,8 +51,6 @@ public class ZipHandler {
 				int l;
 				while((l = fis.read(buffer)) > 0)
 					zos.write(buffer, 0, l);
-			} catch (IOException ex) {
-				ex.printStackTrace();
 			}
 		}
 	}

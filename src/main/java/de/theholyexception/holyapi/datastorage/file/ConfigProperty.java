@@ -7,13 +7,16 @@ import java.io.InputStream;
 import java.util.Objects;
 import java.util.Properties;
 
+import de.theholyexception.holyapi.util.NotImplementedException;
 import de.theholyexception.holyapi.util.SortedProperties;
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
 
 public class ConfigProperty implements FileConfiguration {
 
-	private File file;
+	private final File file;
 	private Properties properties;
-	private String headline;
+	private final String headline;
 	
 	public ConfigProperty(File file, String headline) {
 		Objects.requireNonNull(file);
@@ -25,11 +28,11 @@ public class ConfigProperty implements FileConfiguration {
 	public void createNew() {
 		try {
 			file.createNewFile();
-			FileOutputStream os = new FileOutputStream(file);
-			properties.store(os, headline);
-			os.close();
+			try (FileOutputStream os = new FileOutputStream(file)) {
+				properties.store(os, headline);
+			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR, "Failed to create configuration file", ex);
 		}
 	}
 	@Override
@@ -37,13 +40,13 @@ public class ConfigProperty implements FileConfiguration {
 		try {
 			properties = new SortedProperties();
 			properties.load(stream);
-			
-			FileOutputStream fos = new FileOutputStream(file);
-			properties.store(fos, headline);
-			fos.close();
+
+			try (FileOutputStream fos = new FileOutputStream(file)) {
+				properties.store(fos, headline);
+			}
 			loadConfig();
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to create configuration file", ex);
 		}		
 	}
 
@@ -68,25 +71,29 @@ public class ConfigProperty implements FileConfiguration {
 	@Override
 	public void loadConfig() {
 		try {
-			FileInputStream fis = new FileInputStream(file);
-			properties = new SortedProperties();			
-			properties.load(fis);
-			fis.close();
+			properties = new SortedProperties();
+			try (FileInputStream fis = new FileInputStream(file)) {
+				properties.load(fis);
+			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to load configuration file", ex);
 		}
 	}
 
 	@Override
 	public void saveConfig() {
 		try {
-			FileOutputStream fos = new FileOutputStream(file);
-			properties.store(fos, null);
-			fos.flush();
-			fos.close();
+			try (FileOutputStream fos = new FileOutputStream(file)) {
+				properties.store(fos, null);
+			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to safe configuration", ex);
 		}
+	}
+
+	@Override
+	public void saveConfig(SaveOption... saveOptions) {
+		throw new NotImplementedException();
 	}
 
 	@Override

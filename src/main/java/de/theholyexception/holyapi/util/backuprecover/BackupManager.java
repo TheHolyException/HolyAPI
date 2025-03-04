@@ -1,18 +1,18 @@
 package de.theholyexception.holyapi.util.backuprecover;
 
-import net.lingala.zip4j.ZipFile;
-import net.lingala.zip4j.exception.ZipException;
+import de.theholyexception.holyapi.util.NotImplementedException;
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
+import lombok.Getter;
 import net.lingala.zip4j.io.inputstream.ZipInputStream;
 import net.lingala.zip4j.io.outputstream.ZipOutputStream;
-import net.lingala.zip4j.model.FileHeader;
 import net.lingala.zip4j.model.LocalFileHeader;
 import net.lingala.zip4j.model.ZipParameters;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -24,6 +24,7 @@ public class BackupManager {
     private final Map<String, List<BackupItem>> items;
     private final File sourceFolder;
     private final File outputFolder;
+    @Getter
     private final Function<String, BackupItemInfo> backupInfoResolver;
 
 
@@ -98,10 +99,6 @@ public class BackupManager {
         });
     }
 
-    public Function<String, BackupItemInfo> getBackupInfoResolver() {
-        return backupInfoResolver;
-    }
-
     public File createFull(File folder) {
         throw new NotImplementedException();
     }
@@ -136,21 +133,6 @@ public class BackupManager {
         BackupItemInfo itemInfo = item.get().getItemInfo();
         File outputFile = new File(outputFolder, itemInfo.getPath() + " " + itemInfo.getTimeStamp() + ".zip");
 
-        /*
-        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile))) {
-            BackupItem i = item.get();
-            List<String> blackList = new ArrayList<>();
-
-            do {
-                writeZipFile(zos, i, blackList);
-                i = i.getLastBackup();
-            } while (i != null);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-
-         */
-
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile))) {
             BackupItem i = item.get();
             List<String> blackList = new ArrayList<>();
@@ -160,7 +142,7 @@ public class BackupManager {
                 i = i.getLastBackup();
             } while (i != null);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            LoggerProxy.log(LogLevel.ERROR, "Failed to restore backup", ex);
         }
 
         System.gc();
@@ -168,9 +150,8 @@ public class BackupManager {
         return outputFile;
     }
 
-    private void writeZipFile(ZipOutputStream zos, BackupItem item, char[] password, List<String> blacklist) throws ZipException {
-        System.out.println(item);
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(item.getFile()), password)) {
+    private void writeZipFile(ZipOutputStream zos, BackupItem item, char[] password, List<String> blacklist) {
+        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(item.getFile().toPath()), password)) {
 
             LocalFileHeader localFileHeader;
             byte[] buffer = new byte[8192];
@@ -193,46 +174,13 @@ public class BackupManager {
 
 
         } catch (IOException ex) {
-            ex.printStackTrace();
+            LoggerProxy.log(LogLevel.ERROR, "Failed to write zip file", ex);
         }
     }
-
-    /*
-    private void writeZipFile(ZipOutputStream zos, BackupItem item, List<String> blackList) {
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(item.getFile()))) {
-
-            ZipEntry zisEntry;
-            ZipEntry zosEntry;
-            byte[] buffer = new byte[1024*1024*64];
-            int l;
-
-            while((zisEntry = zis.getNextEntry()) != null) {
-                if (blackList.contains(zisEntry.getName())) continue;
-                zosEntry = new ZipEntry(zisEntry.getName());
-                zosEntry.setExtra(zisEntry.getExtra());
-                zosEntry.setComment("from " + item.getFile());
-                if (zisEntry.getCreationTime() != null) zosEntry.setCreationTime(zisEntry.getCreationTime());
-                if (zisEntry.getLastAccessTime() != null) zosEntry.setLastAccessTime(zisEntry.getLastAccessTime());
-                if (zisEntry.getLastModifiedTime() != null) zosEntry.setLastModifiedTime(zisEntry.getLastModifiedTime());
-                zosEntry.setTime(zisEntry.getTime());
-                zos.putNextEntry(zosEntry);
-
-                while((l = zis.read(buffer)) != -1) {
-                    zos.write(buffer, 0, l);
-                }
-                zos.closeEntry();
-                blackList.add(zosEntry.getName());
-            }
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-
-    }
-
-     */
 
     public static class Resolvers {
+
+        private Resolvers() {}
 
         public static final SimpleDateFormat CORBINAN_DE_SDF = new SimpleDateFormat("yyyy-MM-dd HH;mm;ss");
         public static final Function<String, BackupItemInfo> CORBINAN_DE = fileName -> {
@@ -257,7 +205,7 @@ public class BackupManager {
             try {
                 timeStamp = CORBINAN_DE_SDF.parse(segments[1] + " " + segments[2]).getTime();
             } catch (ParseException ex) {
-                ex.printStackTrace();
+                LoggerProxy.log(LogLevel.ERROR, "Failed to parse timestamp", ex);
                 return null;
             }
 
@@ -286,7 +234,7 @@ public class BackupManager {
             try {
                 timeStamp = CORBINAN_DE_SDF.parse(segments[1] + " " + segments[2]).getTime();
             } catch (ParseException ex) {
-                ex.printStackTrace();
+                LoggerProxy.log(LogLevel.ERROR, "Failed to parse timestamp", ex);
                 return null;
             }
 

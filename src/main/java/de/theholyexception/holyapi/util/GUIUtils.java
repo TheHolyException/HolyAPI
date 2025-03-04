@@ -1,9 +1,10 @@
 package de.theholyexception.holyapi.util;
 
 import java.awt.*;
-import java.io.IOException;
 
 public class GUIUtils {
+
+    private GUIUtils() {}
 
     /**
      * It takes a number of bytes and returns a string with the number of bytes in a human readable format

@@ -14,16 +14,20 @@ import java.util.logging.Logger;
 
 import de.theholyexception.holyapi.datastorage.sql.Result;
 import de.theholyexception.holyapi.util.ExecutorHandler;
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
+import lombok.Getter;
 
 public abstract class DataBaseInterface {
 
-	protected Logger logger;
+	@Getter
 	protected Connection connection;
 	protected int resultSetType        = ResultSet.TYPE_SCROLL_SENSITIVE;
 	protected int resultSetConcurrency = ResultSet.CONCUR_UPDATABLE;
 	
 	protected boolean autoCommit = true;
 	protected boolean allowAsync = false;
+	@Getter
 	protected ExecutorHandler executorHandler = null;
 
 	protected DataBaseInterface() {
@@ -43,72 +47,42 @@ public abstract class DataBaseInterface {
 		return this;
 	}
 
-	public DataBaseInterface setLogger(Logger logger) {
-		this.logger = logger;
-		return this;
-	}
-	
-	public DataBaseInterface setDefaultLogger() {
-		try {
-			this.logger = Logger.getLogger("HolyAPI");
-			InputStream stream = DataBaseInterface.class.getClassLoader().getResourceAsStream("logging.properties");
-			LogManager.getLogManager().readConfiguration(stream);
-		} catch (SecurityException | IOException e) {
-			e.printStackTrace();
-		}
-		return this;
-	}
-
 	public void checkConnection() {
 		try {
 			if (connection == null || connection.isClosed())
 				connect();
 		} catch (SQLException ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to check connection", ex);
 		}
 	}
-	public void connect() {
-		if (logger == null) setDefaultLogger();
-	}
+	public abstract void connect();
 	
 	public void disconnect() {
 		try {
 			if (connection == null || connection.isClosed()) {
-				logger.log(Level.WARNING, "Can't disconnect, there is no valid Connection.");
+				LoggerProxy.log(LogLevel.WARN,"Can't disconnect, there is no valid Connection.");
 			}
 
 			if (allowAsync) {
-				logger.log(Level.INFO, "Awaiting async tasks.");
+				LoggerProxy.log(LogLevel.INFO,"Awaiting async tasks.");
 				executorHandler.closeAfterExecution();
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to disconnect", ex);
 		}
 	}
 
 	public void logServerInfos() {
 		try {
 			DatabaseMetaData metaData = connection.getMetaData();
-			logger.log(Level.INFO, "Established Connection.");
-			logger.log(Level.INFO, "Driver name: {0}", metaData.getDriverName());
-			logger.log(Level.INFO, "Driver version: {0}", metaData.getDriverVersion());
-			logger.log(Level.INFO, "Product name: {0}", metaData.getDatabaseProductName());
-			logger.log(Level.INFO, "Product version: {0}", metaData.getDatabaseProductVersion());
+			LoggerProxy.log(LogLevel.INFO,"Established Connection.");
+			LoggerProxy.log(LogLevel.INFO,"Driver name: {0}", metaData.getDriverName());
+			LoggerProxy.log(LogLevel.INFO,"Driver version: {0}", metaData.getDriverVersion());
+			LoggerProxy.log(LogLevel.INFO,"Product name: {0}", metaData.getDatabaseProductName());
+			LoggerProxy.log(LogLevel.INFO,"Product version: {0}", metaData.getDatabaseProductVersion());
 		} catch (SQLException ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to log server infos", ex);
 		}
-	}
-
-	public Logger getLogger() {
-		return logger;
-	}
-
-	public Connection getConnection() {
-		return connection;
-	}
-
-	public ExecutorHandler getExecutorHandler() {
-		return executorHandler;
 	}
 
 	public abstract ResultSet 	executeQuery			(String query);

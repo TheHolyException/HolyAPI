@@ -15,9 +15,9 @@ public class Result {
         do {
             ResultSet rs = statement.getResultSet();
             tables.add(new Table(rs));
-            rs.close();
             hasResults = statement.getMoreResults();
         } while (hasResults);
+        statement.close();
     }
 
     public Table getTable(int index) {

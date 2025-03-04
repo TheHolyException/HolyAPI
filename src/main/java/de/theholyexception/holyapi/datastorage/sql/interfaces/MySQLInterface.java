@@ -8,10 +8,11 @@ import java.sql.Statement;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 
 import de.theholyexception.holyapi.datastorage.sql.Result;
 import de.theholyexception.holyapi.util.ExecutorTask;
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
 
 public class MySQLInterface extends DataBaseInterface {
 
@@ -25,9 +26,9 @@ public class MySQLInterface extends DataBaseInterface {
 	
 	static {
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to load MySQL Driver", ex);
 		}
 	}
 	public MySQLInterface(String address, int port, String username, String password, String database) {
@@ -46,7 +47,7 @@ public class MySQLInterface extends DataBaseInterface {
 						connect();
 					}
 				} catch (SQLException e) {
-					e.printStackTrace();
+					LoggerProxy.log(LogLevel.ERROR, "Failed to reconnect", e);
 				}
 			}
 		}, 10000, 10000);
@@ -55,27 +56,25 @@ public class MySQLInterface extends DataBaseInterface {
 	
 	@Override
 	public void connect() {
-		super.connect();
 		try {
-			logger.log(Level.INFO, "Establishing MySQL Connection.");
+			LoggerProxy.log(LogLevel.INFO, "Establishing MySQL Connection.");
 			connection = DriverManager.getConnection(String.format("jdbc:mysql://%s:%s/%s", address, port, database), username, password);
 			connection.setAutoCommit(false);
 			logServerInfos();
 		} catch (Exception ex) {
-			logger.log(Level.SEVERE, "Connection Failed.");
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR, "Connection Failed.", ex);
 		}
 	}
 
 	@Override
 	public void disconnect() {
 		super.disconnect();
-		logger.log(Level.INFO, "Closing MySQL connection.");
+		LoggerProxy.log(LogLevel.INFO, "Closing MySQL connection.");
 		try {
 			connection.close();
-			logger.log(Level.INFO, "Connection closed.");
+			LoggerProxy.log(LogLevel.INFO, "Connection closed.");
 		} catch (Exception ex) {
-			logger.log(Level.SEVERE, "Closing connection Failed.");
+			LoggerProxy.log(LogLevel.ERROR, "Closing connection Failed.");
 		}
 	}
 	
@@ -102,8 +101,7 @@ public class MySQLInterface extends DataBaseInterface {
 			result = statement.executeQuery(query);
 			statement.closeOnCompletion();
 		} catch (SQLException ex) {
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
 		}
 		return result;
 	}
@@ -127,8 +125,7 @@ public class MySQLInterface extends DataBaseInterface {
 			result = statement.executeQuery();
 			statement.closeOnCompletion();
 		} catch (SQLException ex) {
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
 		}
 		return result;
 	}
@@ -171,9 +168,8 @@ public class MySQLInterface extends DataBaseInterface {
 			if (autoCommit) connection.commit();
 			statement.closeOnCompletion();
 		} catch (SQLException ex) {
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
-			try {connection.rollback();} catch (SQLException ex1) {ex.printStackTrace();}
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
+			try {connection.rollback();} catch (SQLException ex1) {LoggerProxy.log(LogLevel.ERROR, "Failed to rollback changes", ex1);}
 		}
 	}
 
@@ -196,9 +192,8 @@ public class MySQLInterface extends DataBaseInterface {
 			if (autoCommit) connection.commit();
 			statement.closeOnCompletion();
 		} catch (SQLException ex) {
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
-			if (autoCommit) try {connection.rollback();} catch (SQLException ex1) {ex.printStackTrace();}
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
+			try {connection.rollback();} catch (SQLException ex1) {LoggerProxy.log(LogLevel.ERROR, "Failed to rollback changes", ex1);}
 		}
 	}
 
@@ -245,14 +240,10 @@ public class MySQLInterface extends DataBaseInterface {
 				return null;
 
 			Result result = new Result(statement);
-			statement.execute(query);
 			if (autoCommit) connection.commit();
-			statement.closeOnCompletion();
 			return result;
 		} catch (SQLException ex) {
-			ex.printStackTrace();
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
 		}
 		return null;
 	}
@@ -279,14 +270,10 @@ public class MySQLInterface extends DataBaseInterface {
 				return null;
 
 			Result result = new Result(statement);
-			statement.execute(query);
 			if (autoCommit) connection.commit();
-			statement.closeOnCompletion();
 			return result;
 		} catch (SQLException ex) {
-			ex.printStackTrace();
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
 		}
 		return null;
 	}

@@ -1,5 +1,7 @@
 package de.theholyexception.holyapi.util;
 
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -8,10 +10,11 @@ import java.util.concurrent.ExecutorService;
 
 public class ExecutorHandler {
 
-    private int lastTaskIdentifier = 0;
-
     @Getter
-    private List<ExecutorTask> taskList;
+    private int lastTaskIdentifier = 0;
+    @Getter
+    private final List<ExecutorTask> taskList;
+    @Getter
     private ExecutorService executorService;
 
     public ExecutorHandler(ExecutorService executorService) {
@@ -20,10 +23,11 @@ public class ExecutorHandler {
     }
 
     public int getNewTaskIdentifier() {
-        return lastTaskIdentifier++;
+        return ++lastTaskIdentifier;
     }
 
     public void putTask(ExecutorTask task, int groupID) {
+        if (task == null) throw new IllegalArgumentException("Task cannot be null");
         task.setGroupId(groupID);
         task.setTaskId(getNewTaskIdentifier());
         taskList.add(task);
@@ -31,7 +35,33 @@ public class ExecutorHandler {
     }
 
     public void putTask(ExecutorTask task) {
+        if (task == null) throw new IllegalArgumentException("Task cannot be null");
         putTask(task, -1);
+    }
+
+    public boolean abortTask(ExecutorTask task) {
+        if (task.isCompleted() || task.isRunning()) return false;
+        task.setAborted(true);
+        return true;
+    }
+
+    /**
+     * Attempts to abort a task with the specified task ID.
+     *
+     * @param taskId the ID of the task to be aborted
+     * @return true if the task was successfully aborted, false otherwise
+     */
+    public boolean abortTask(int taskId) {
+        // Iterate over the list of tasks
+        for (ExecutorTask task : taskList) {
+            // Check if the current task has the specified task ID
+            if (task.getTaskId() == taskId) {
+                // Attempt to abort the task and return the result
+                return abortTask(task);
+            }
+        }
+        // Return false if no task with the specified ID is found
+        return false;
     }
 
     public boolean hasGroupRunningThreads(int groupID) {
@@ -44,11 +74,12 @@ public class ExecutorHandler {
     }
 
     public void awaitGroup(int groupID, long checkInterval) {
+        if (checkInterval <= 0) throw new IllegalArgumentException("Check interval must be greater than 0");
         while (hasGroupRunningThreads(groupID)) {
             try {
                 Thread.sleep(checkInterval);
             } catch (InterruptedException ex) {
-                ex.printStackTrace();
+                LoggerProxy.log(LogLevel.ERROR, "InterruptedException", ex);
             }
         }
     }
@@ -62,22 +93,15 @@ public class ExecutorHandler {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException ex) {
-                ex.printStackTrace();
+                LoggerProxy.log(LogLevel.ERROR, "InterruptedException", ex);
             }
         }
         executorService.shutdown();
     }
 
     public void closeForce() {
-         executorService.shutdownNow();
-    }
-
-    public ExecutorService getExecutorService() {
-        return executorService;
-    }
-
-    public int getLastTaskIdentifier() {
-        return lastTaskIdentifier;
+        if (executorService.isShutdown()) throw new IllegalStateException("ExecutorService is already shutdown");
+        executorService.shutdownNow();
     }
 
     public void updateExecutorService(ExecutorService executorService) {

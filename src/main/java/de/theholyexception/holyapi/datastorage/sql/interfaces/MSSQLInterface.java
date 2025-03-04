@@ -3,10 +3,11 @@ package de.theholyexception.holyapi.datastorage.sql.interfaces;
 import de.theholyexception.holyapi.datastorage.sql.Result;
 import de.theholyexception.holyapi.util.ExecutorTask;
 import de.theholyexception.holyapi.util.NotImplementedException;
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
 
 import java.sql.*;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 
 public class MSSQLInterface extends DataBaseInterface {
 
@@ -39,25 +40,23 @@ public class MSSQLInterface extends DataBaseInterface {
 
     @Override
     public void connect() {
-        super.connect();
         try {
             String connectionString = String.format("jdbc:sqlserver://%s\\%s:%d;user=%s;password=%s", servername, instancename, portnumber, username, password);
             connection = DriverManager.getConnection(connectionString);
-            logger.log(Level.INFO, "Established MySQL Connection.");
+            LoggerProxy.log(LogLevel.INFO, "Established MySQL Connection.");
 
             if (database != null) {
                 execute("USE " + database);
                 ResultSet result = executeQuery("SELECT DB_NAME()");
                 result.next();
                 if (result.getString(1).equals(database)) {
-                    logger.log(Level.INFO, "Switched database to: {0}", database);
+                    LoggerProxy.log(LogLevel.INFO, "Switched database to: {0}", database);
                 } else
-                    logger.log(Level.WARNING, "Failed to switch database, current: {0}; target: {1}", new String[] {result.getString(1), database});
+                    LoggerProxy.log(LogLevel.WARN, "Failed to switch database, current: {0}; target: {1}", new String[] {result.getString(1), database});
                 result.close();
             }
         } catch (Exception ex) {
-            logger.log(Level.SEVERE, "Connection Failed.");
-            ex.printStackTrace();
+            LoggerProxy.log(LogLevel.WARN, "Connection Failed.", ex);
         }
     }
 
@@ -84,9 +83,7 @@ public class MSSQLInterface extends DataBaseInterface {
             result = statement.executeQuery(query);
             statement.closeOnCompletion();
         } catch (SQLException ex) {
-            logger.log(Level.WARNING, "Failed to execute query");
-            logger.log(Level.WARNING, ex.getMessage());
-            ex.printStackTrace();
+            LoggerProxy.log(LogLevel.ERROR,"Failed to execute query", ex);
         }
         return result;
     }
@@ -110,9 +107,7 @@ public class MSSQLInterface extends DataBaseInterface {
             result = statement.executeQuery();
             statement.closeOnCompletion();
         } catch (SQLException ex) {
-            logger.log(Level.WARNING, "Failed to execute query");
-            logger.log(Level.WARNING, ex.getMessage());
-            ex.printStackTrace();
+            LoggerProxy.log(LogLevel.ERROR,"Failed to execute query", ex);
         }
         return result;
     }
@@ -155,9 +150,8 @@ public class MSSQLInterface extends DataBaseInterface {
             if (autoCommit) connection.commit();
             statement.closeOnCompletion();
         } catch (SQLException ex) {
-            logger.log(Level.WARNING, "Failed to execute query");
-            logger.log(Level.WARNING, ex.getMessage());
-            try {connection.rollback();} catch (SQLException ex1) {ex.printStackTrace();}
+            LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
+            try {connection.rollback();} catch (SQLException ex1) {LoggerProxy.log(LogLevel.ERROR, "Failed to rollback changes", ex1);}
         }
     }
 
@@ -180,9 +174,8 @@ public class MSSQLInterface extends DataBaseInterface {
             if (autoCommit) connection.commit();
             statement.closeOnCompletion();
         } catch (SQLException ex) {
-            logger.log(Level.WARNING, "Failed to execute query");
-            logger.log(Level.WARNING, ex.getMessage());
-            if (autoCommit) try {connection.rollback();} catch (SQLException ex1) {ex.printStackTrace();}
+            LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
+            try {connection.rollback();} catch (SQLException ex1) {LoggerProxy.log(LogLevel.ERROR, "Failed to rollback changes", ex1);}
         }
     }
 

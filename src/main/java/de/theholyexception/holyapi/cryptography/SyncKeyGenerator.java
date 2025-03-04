@@ -1,5 +1,8 @@
 package de.theholyexception.holyapi.cryptography;
 
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,7 +31,7 @@ public class SyncKeyGenerator {
             keyGen.initialize(keylength);
             keyPair = keyGen.generateKeyPair();
         } catch (NoSuchAlgorithmException ex) {
-        	ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to generate keys", ex);
         }
     }
     

@@ -32,4 +32,8 @@ public class Table {
         return rows.stream().iterator();
     }
 
+    public List<Row> getRows() {
+        return rows;
+    }
+
 }

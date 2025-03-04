@@ -5,11 +5,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
 import org.json.simple.JSONAware;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 
 public abstract class JSONContainer {
 
@@ -32,22 +30,14 @@ public abstract class JSONContainer {
 	}
 	
 	public void save(File file) {
-		JSONAware raw = (JSONAware) getRaw();
+		JSONAware raw = getRaw();
 		try {
 			if (!file.exists()) file.createNewFile();
-			if (!this.prettySave) {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-				writer.write(raw.toJSONString());
-				writer.close();
-			} else {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-				JsonElement element = new Gson().fromJson(raw.toString(), JsonElement.class);
-				Gson gson = new GsonBuilder().setPrettyPrinting().create();
-				writer.write(gson.toJson(element));
-				writer.close();
+			try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+				writer.write(this.prettySave ? JSONFormatter.format(raw.toJSONString()) : raw.toJSONString());
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to save JSONContainer to file", ex);
 		}
 	}
 	

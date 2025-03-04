@@ -13,6 +13,8 @@ import java.util.logging.Level;
 import de.theholyexception.holyapi.datastorage.sql.Result;
 import de.theholyexception.holyapi.util.ExecutorTask;
 import de.theholyexception.holyapi.util.NotImplementedException;
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
 
 public class SQLiteInterface extends DataBaseInterface {
 
@@ -24,7 +26,7 @@ public class SQLiteInterface extends DataBaseInterface {
 		try {
 			if (!file.exists()) file.createNewFile();
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to create SQLite file", ex);
 		} finally {
 			path = file.getAbsolutePath();
 		}
@@ -35,26 +37,24 @@ public class SQLiteInterface extends DataBaseInterface {
 	
 	@Override
 	public void connect() {
-		super.connect();
 		try {
-			logger.log(Level.INFO, "Establishing SQLite Connection.");
+			LoggerProxy.log(LogLevel.INFO, "Establishing SQLite Connection.");
 			connection = DriverManager.getConnection("jdbc:sqlite:"+path);
 			logServerInfos();
 		} catch (SQLException ex) {
-			logger.log(Level.SEVERE, "Connection Failed.");
-			ex.printStackTrace();
+			LoggerProxy.log(LogLevel.ERROR,"Failed to connect to SQLite", ex);
 		}
 	}
 	
 	@Override
 	public void disconnect() {
 		super.disconnect();
-		logger.log(Level.INFO, "Closing SQLite connection.");
+		LoggerProxy.log(LogLevel.INFO, "Closing SQLite connection.");
 		try {
 			connection.close();
-			logger.log(Level.INFO, "Connection closed.");
+			LoggerProxy.log(LogLevel.INFO, "Connection closed.");
 		} catch (Exception ex) {
-			logger.log(Level.SEVERE, "Closing connection Failed.");
+			LoggerProxy.log(LogLevel.ERROR, "Closing connection Failed.", ex);
 		}
 	}
 	
@@ -63,7 +63,7 @@ public class SQLiteInterface extends DataBaseInterface {
 		try {
 			throw new UnsupportedOperationException("SQLite only supports CONCUR_READ_ONLY cursors");
 		} catch (UnsupportedOperationException ex) {
-			logger.log(Level.WARNING, ex.getClass().getName() + " " + ex.getMessage());
+			LoggerProxy.log(LogLevel.ERROR, ex.getClass().getName() + " " + ex.getMessage());
 		}
 		return (T)this;
 	}
@@ -73,7 +73,7 @@ public class SQLiteInterface extends DataBaseInterface {
 		try {
 			throw new UnsupportedOperationException("SQLite only supports TYPE_FORWARD_ONLY cursors");
 		} catch (UnsupportedOperationException ex) {
-			logger.log(Level.WARNING, ex.getClass().getName() + " " + ex.getMessage());
+			LoggerProxy.log(LogLevel.ERROR, ex.getClass().getName() + " " + ex.getMessage());
 		}
 		return (T)this;
 	}
@@ -88,8 +88,7 @@ public class SQLiteInterface extends DataBaseInterface {
 			result = statement.executeQuery(query);
 			statement.closeOnCompletion();
 		} catch (SQLException ex) {
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
 		}
 		return result;
 	}
@@ -113,8 +112,7 @@ public class SQLiteInterface extends DataBaseInterface {
 			result = statement.executeQuery();
 			statement.closeOnCompletion();
 		} catch (SQLException ex) {
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
 		}
 		return result;
 	}
@@ -156,9 +154,8 @@ public class SQLiteInterface extends DataBaseInterface {
 			statement.execute(query);
 			statement.closeOnCompletion();
 		} catch (SQLException ex) {
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
-			try {connection.rollback();} catch (SQLException ex1) {ex.printStackTrace();}
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
+			try {connection.rollback();} catch (SQLException ex1) {LoggerProxy.log(LogLevel.ERROR, "Failed to rollback changes", ex1);}
 		}
 	}
 
@@ -179,9 +176,8 @@ public class SQLiteInterface extends DataBaseInterface {
 			statement.execute();
 			statement.closeOnCompletion();
 		} catch (SQLException ex) {
-			logger.log(Level.WARNING, "Failed to execute query");
-			logger.log(Level.WARNING, ex.getMessage());
-			if (autoCommit) try {connection.rollback();} catch (SQLException ex1) {ex.printStackTrace();}
+			LoggerProxy.log(LogLevel.ERROR, "Failed to execute query", ex);
+			try {connection.rollback();} catch (SQLException ex1) {LoggerProxy.log(LogLevel.ERROR, "Failed to rollback changes", ex1);}
 		}
 	}
 

@@ -1,5 +1,8 @@
 package de.theholyexception.holyapi.util.expiringmap;
 
+import de.theholyexception.holyapi.util.logger.LogLevel;
+import de.theholyexception.holyapi.util.logger.LoggerProxy;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +31,7 @@ public class ExpiringMap<K,V> extends ConcurrentHashMap<K, V> {
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                    Thread.currentThread().interrupt();
+                    LoggerProxy.log(LogLevel.ERROR, "InterruptedException", ex);
                 }
             }
         }, "ExpiringMap-Cleanup");
