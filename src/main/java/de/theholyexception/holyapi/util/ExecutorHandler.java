@@ -7,6 +7,9 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 public class ExecutorHandler {
 
@@ -16,27 +19,43 @@ public class ExecutorHandler {
     private final List<ExecutorTask> taskList;
     @Getter
     private ExecutorService executorService;
+    private Function<Integer, String> threadNameFactory;
+    @Getter
+    private List<Thread> threadList = new ArrayList<>();
+    public static final int DEFAULT_GROUP = -1;
 
     public ExecutorHandler(ExecutorService executorService) {
         this.executorService = executorService;
         this.taskList = new ArrayList<>();
+        applyThreadNameFactory();
     }
 
     public int getNewTaskIdentifier() {
         return ++lastTaskIdentifier;
     }
 
-    public void putTask(ExecutorTask task, int groupID) {
+    public ExecutorTask putTask(ExecutorTask task, int groupID) {
         if (task == null) throw new IllegalArgumentException("Task cannot be null");
         task.setGroupId(groupID);
         task.setTaskId(getNewTaskIdentifier());
         taskList.add(task);
         executorService.execute(task);
+        return task;
     }
 
-    public void putTask(ExecutorTask task) {
+    public ExecutorTask putTask(Runnable runnable, int groupID) {
+        if (runnable == null) throw new IllegalArgumentException("Runnable cannot be null");
+        return putTask(new ExecutorTask(runnable, groupID));
+    }
+
+    public ExecutorTask putTask(ExecutorTask task) {
         if (task == null) throw new IllegalArgumentException("Task cannot be null");
-        putTask(task, -1);
+        return putTask(task, DEFAULT_GROUP);
+    }
+
+    public ExecutorTask putTask(Runnable runnable) {
+        if (runnable == null) throw new IllegalArgumentException("Runnable cannot be null");
+        return putTask(new ExecutorTask(runnable));
     }
 
     public boolean abortTask(ExecutorTask task) {
@@ -107,5 +126,34 @@ public class ExecutorHandler {
     public void updateExecutorService(ExecutorService executorService) {
         if (areThreadsRunning()) throw new IllegalStateException("There are still threads running, close them with closeForce()");
         this.executorService = executorService;
+        applyThreadNameFactory();
     }
+
+    public void setThreadNameFactory(Function<Integer, String> function) {
+        this.threadNameFactory = function;
+        applyThreadNameFactory();
+    }
+
+    private void applyThreadNameFactory() {
+        if (!(executorService instanceof ThreadPoolExecutor)) {
+            LoggerProxy.log(LogLevel.WARN, "ExecutorService is not a ThreadPoolExecutor, can't apply thread name factory");
+            return;
+        }
+        if (areThreadsRunning()) {
+            LoggerProxy.log(LogLevel.ERROR, "Can't apply thread name factory, there are still threads running");
+            return;
+        }
+        AtomicInteger counter = new AtomicInteger(0);
+        threadList.clear();
+        ((ThreadPoolExecutor)executorService).setThreadFactory(t -> {
+            Thread thread;
+            if (threadNameFactory != null)
+                thread = new Thread(t, threadNameFactory.apply(counter.getAndIncrement()));
+            else
+                thread = new Thread(t);
+            threadList.add(thread);
+            return thread;
+        });
+    }
+
 }

@@ -74,13 +74,13 @@ public class ExecutorTask implements Runnable {
             runtime = System.currentTimeMillis()- startTime;
             if (onComplete != null)
                 onComplete.run();
-            completed = true;
         } catch (Exception ex) {
             if (onError != null)
                 onError.accept(ex);
             else
                 LoggerProxy.log(LogLevel.ERROR, "Failed to run task ", ex);
         }
+        completed = true;
     }
 
     @Override
