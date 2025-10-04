@@ -2,8 +2,10 @@ package de.theholyexception.holyapi.util.expiringmap;
 
 import de.theholyexception.holyapi.util.logger.LogLevel;
 import de.theholyexception.holyapi.util.logger.LoggerProxy;
+import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,26 +14,34 @@ public class ExpiringMap<K,V> extends ConcurrentHashMap<K, V> {
 
     private static final Thread thread;
     private static final List<List<ExpiringListener>> listList;
+    @Setter
+    private static Long checkInterval = 50L;
 
     static {
-        listList = new ArrayList<>();
+        listList = Collections.synchronizedList(new ArrayList<>());
         thread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
-                long currentTime = System.currentTimeMillis();
-                listList.forEach(list -> {
-                    List<ExpiringListener> removed = new ArrayList<>();
-                    for (ExpiringListener listener : list) {
-                        if (currentTime >= listener.getTimeStamp()) {
-                            listener.expire();
-                            removed.add(listener);
+                try {
+                    long currentTime = System.currentTimeMillis();
+                    synchronized (listList) {
+                        for (List<ExpiringListener> list : listList) {
+                            List<ExpiringListener> removed = new ArrayList<>();
+                            for (ExpiringListener listener : list) {
+                                if (currentTime >= listener.getTimeStamp()) {
+                                    listener.expire();
+                                    removed.add(listener);
+                                }
+                            }
+                            list.removeAll(removed);
                         }
                     }
-                    list.removeAll(removed);
-                });
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException ex) {
-                    LoggerProxy.log(LogLevel.ERROR, "InterruptedException", ex);
+                    try {
+                        Thread.sleep(checkInterval);
+                    } catch (InterruptedException ex) {
+                        LoggerProxy.log(LogLevel.ERROR, "InterruptedException", ex);
+                    }
+                } catch (Exception ex) {
+                    LoggerProxy.log(LogLevel.ERROR, "Exception in ExpiringCleanupTask", ex);
                 }
             }
         }, "ExpiringMap-Cleanup");
@@ -51,7 +61,7 @@ public class ExpiringMap<K,V> extends ConcurrentHashMap<K, V> {
     public ExpiringMap(long millis, boolean includeAccess) {
         this.holdTime = millis;
         this.includeAccess = includeAccess;
-        expiringListenerList = new ArrayList<>();
+        expiringListenerList = Collections.synchronizedList(new ArrayList<>());
         listList.add(expiringListenerList);
     }
 

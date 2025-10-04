@@ -38,7 +38,9 @@ public class ExecutorHandler {
         if (task == null) throw new IllegalArgumentException("Task cannot be null");
         task.setGroupId(groupID);
         task.setTaskId(getNewTaskIdentifier());
-        taskList.add(task);
+        synchronized (taskList) {
+            taskList.add(task);
+        }
         executorService.execute(task);
         return task;
     }
@@ -71,12 +73,14 @@ public class ExecutorHandler {
      * @return true if the task was successfully aborted, false otherwise
      */
     public boolean abortTask(int taskId) {
-        // Iterate over the list of tasks
-        for (ExecutorTask task : taskList) {
-            // Check if the current task has the specified task ID
-            if (task.getTaskId() == taskId) {
-                // Attempt to abort the task and return the result
-                return abortTask(task);
+        synchronized (taskList) {
+            // Iterate over the list of tasks
+            for (ExecutorTask task : taskList) {
+                // Check if the current task has the specified task ID
+                if (task.getTaskId() == taskId) {
+                    // Attempt to abort the task and return the result
+                    return abortTask(task);
+                }
             }
         }
         // Return false if no task with the specified ID is found
@@ -84,12 +88,16 @@ public class ExecutorHandler {
     }
 
     public boolean hasGroupRunningThreads(int groupID) {
-        return taskList.stream()
-                .anyMatch(t -> (t.getGroupId() == groupID) && !t.isCompleted());
+        synchronized (taskList) {
+            return taskList.stream()
+                    .anyMatch(t -> (t.getGroupId() == groupID) && !t.isCompleted());
+        }
     }
 
     public boolean areThreadsRunning() {
-        return taskList.stream().anyMatch(t -> !t.isCompleted());
+        synchronized (taskList) {
+            return taskList.stream().anyMatch(t -> !t.isCompleted());
+        }
     }
 
     public void awaitGroup(int groupID, long checkInterval) {
@@ -108,11 +116,13 @@ public class ExecutorHandler {
     }
 
     public void closeAfterExecution() {
-        while (taskList.stream().anyMatch(t -> !t.isCompleted())) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ex) {
-                LoggerProxy.log(LogLevel.ERROR, "InterruptedException", ex);
+        synchronized (taskList) {
+            while (taskList.stream().anyMatch(t -> !t.isCompleted())) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                    LoggerProxy.log(LogLevel.ERROR, "InterruptedException", ex);
+                }
             }
         }
         executorService.shutdown();

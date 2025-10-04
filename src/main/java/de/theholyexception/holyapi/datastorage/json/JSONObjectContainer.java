@@ -73,7 +73,11 @@ public class JSONObjectContainer extends JSONContainer implements Serializable, 
 				data.put(key, new JSONArray() {{addAll(Arrays.asList((Object[]) object));}});
 			}
 		} else {
-			data.put(key, object);
+			Object result = object;
+			if (result instanceof JSONObjectContainer) {
+				result = ((JSONObjectContainer)result).getRaw();
+			}
+			data.put(key, result);
 		}
 		if (autoSafe) save(autoSafeFile);
 	}
@@ -89,6 +93,9 @@ public class JSONObjectContainer extends JSONContainer implements Serializable, 
 
 	public JSONObjectContainer getObjectContainer(Object key) {
 		if (data.containsKey(key)) {
+			Object x = data.get(key);
+			if (x instanceof JSONObjectContainer) return (JSONObjectContainer) x;
+			if (x instanceof JSONObject) return new JSONObjectContainer((JSONObject)data.get(key));
 			return new JSONObjectContainer((JSONObject)data.get(key));
 		}
 		return null;
@@ -105,7 +112,13 @@ public class JSONObjectContainer extends JSONContainer implements Serializable, 
 	
 	public JSONArrayContainer getArrayContainer(Object key) {
 		if (data.containsKey(key)) {
-			return new JSONArrayContainer((JSONArray)data.get(key));
+			Object array = data.get(key);
+			if (array instanceof JSONArray)
+				return new JSONArrayContainer((JSONArray)data.get(key));
+			else if (array instanceof JSONArrayContainer)
+				return (JSONArrayContainer) array;
+			else
+				throw new IllegalStateException("Not an JSONArray or JSONArrayContainer");
 		}
 		return null;
 	}

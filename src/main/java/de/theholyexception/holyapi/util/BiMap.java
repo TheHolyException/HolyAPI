@@ -54,6 +54,13 @@ public class BiMap<K,V> implements Map<K,V> {
         return v;
     }
 
+    public K removeByValue(V value) {
+        K v;
+        v = inverseMap.remove(value);
+        map.remove(v);
+        return v;
+    }
+
     @Override
     public void putAll(Map<? extends K, ? extends V> m) {
         map.putAll(m);
