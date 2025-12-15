@@ -5,12 +5,11 @@ import org.junit.jupiter.api.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class DITest {
 
-	private static AdvancedDIContainer container;
 
 	@Test
 	@Order(1)
 	void simpleDI() {
-		container = new AdvancedDIContainer();
+		AdvancedDIContainer container = new AdvancedDIContainer();
 
 		container.register(DITestClass1.class, DITestClass1.class);
 		container.resolve(DITestClass1.class);
@@ -73,6 +72,17 @@ public class DITest {
 		container.injectFields(t);
 
 		assert t.testClass1 != null;
+	}
+
+	@Test
+	@Order(5)
+	void privateConstructor() {
+		ComplexDIContainer container = new ComplexDIContainer()
+			.setResolveCircularDependencies(true);
+		container.register(DITestClass1.class, new DITestClass1());
+		DITestPrivate1 instance = container.resolve(DITestPrivate1.class);
+
+		assert instance.testClass1 != null;
 	}
 
 }

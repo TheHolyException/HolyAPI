@@ -74,6 +74,11 @@ public class ComplexDIContainer implements DIContainer {
 				for (int i = 0; i < constructor.getParameterCount(); i++)
 					parameters[i] = null;
 			}
+
+			// enforce the accessibility of the constructor for private constructors
+			if (!constructor.isAccessible())
+				constructor.setAccessible(true);
+
 			instance = (T) constructor.newInstance(parameters);
 		} catch (Exception e) {
 			throw new DependencyInjectionException("Failed to create instance of " + type.getName(), e);
