@@ -92,6 +92,8 @@ public class ComplexDIContainer implements DIContainer {
 		if (resolveCircularDependencies)
 			resolveCircularDependencies(instance, type);
 
+		if (instance instanceof DIInitializer)
+			((DIInitializer)instance).initialize();
 		return instance;
 	}
 
