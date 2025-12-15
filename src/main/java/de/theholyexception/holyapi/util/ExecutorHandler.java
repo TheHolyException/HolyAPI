@@ -89,14 +89,21 @@ public class ExecutorHandler {
 
     public boolean hasGroupRunningThreads(int groupID) {
         synchronized (taskList) {
-            return taskList.stream()
-                    .anyMatch(t -> (t.getGroupId() == groupID) && !t.isCompleted());
+            for (ExecutorTask task : taskList) {
+                if (task.getGroupId() == groupID && !task.isCompleted())
+                    return true;
+            }
+            return false;
         }
     }
 
     public boolean areThreadsRunning() {
         synchronized (taskList) {
-            return taskList.stream().anyMatch(t -> !t.isCompleted());
+            for (ExecutorTask task : taskList) {
+                if (!task.isCompleted())
+                    return true;
+            }
+            return false;
         }
     }
 
@@ -117,7 +124,7 @@ public class ExecutorHandler {
 
     public void closeAfterExecution() {
         synchronized (taskList) {
-            while (taskList.stream().anyMatch(t -> !t.isCompleted())) {
+            while (areThreadsRunning()) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException ex) {

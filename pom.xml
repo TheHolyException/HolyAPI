@@ -6,7 +6,7 @@
 
     <groupId>de.theholyexception</groupId>
     <artifactId>HolyAPI</artifactId>
-    <version>1.5.7</version>
+    <version>1.5.8</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
