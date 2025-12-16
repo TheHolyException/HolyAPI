@@ -1,5 +1,7 @@
 package de.theholyexception.holyapi.di;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -120,8 +122,12 @@ public class ComplexDIContainer implements DIContainer {
 			for (FutureDependency dependency : dependencies) {
 				try {
 					Field field = dependency.getField();
-					field.setAccessible(true);
-					field.set(dependency.getInstance(), instance);
+					MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(
+						dependency.getInstance().getClass(),
+						MethodHandles.lookup()
+					);
+					VarHandle vh = lookup.findVarHandle(dependency.getInstance().getClass(), field.getName(), field.getType());
+					vh.set(dependency.getInstance(), instance);
 				} catch (ReflectiveOperationException ex) {
 					throw new DependencyInjectionException("Failed to inject FutureDependency " +
 						"of " + type.getName() + " " +
@@ -153,8 +159,12 @@ public class ComplexDIContainer implements DIContainer {
 				// If not, add it to futureDependencies and set it later when the dependency is created
 				if (dependency != null) {
 					try {
-						field.setAccessible(true);
-						field.set(instance, dependency);
+						MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(
+							instance.getClass(),
+							MethodHandles.lookup()
+						);
+						VarHandle vh = lookup.findVarHandle(instance.getClass(), field.getName(), field.getType());
+						vh.set(instance, dependency);
 					} catch (Exception e) {
 						throw new DependencyInjectionException("Failed to inject field " + field.getName() + " of " + instance.getClass().getName(), e);
 					}
