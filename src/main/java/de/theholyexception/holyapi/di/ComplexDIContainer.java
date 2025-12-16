@@ -1,5 +1,6 @@
 package de.theholyexception.holyapi.di;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
@@ -7,14 +8,22 @@ import java.util.*;
 
 public class ComplexDIContainer implements DIContainer {
 
-	private Map<Class<?>, Class<?>> implementations = new HashMap<>();
 	private final Map<Class<?>, Object> instances = new HashMap<>();
 	private final Map<Class<?>, List<FutureDependency>> futureDependencies = new HashMap<>();
+	private final boolean weakReferences;
 
 	private boolean resolveCircularDependencies = false;
 	private boolean constructorInjection = false;
 	private boolean fieldInjection = true;
 	private boolean constructDependencies = false;
+
+	public ComplexDIContainer() {
+		this(false);
+	}
+
+	public ComplexDIContainer(boolean weakReferences) {
+		this.weakReferences = weakReferences;
+	}
 
 	public ComplexDIContainer setResolveCircularDependencies(boolean value) {
 		this.resolveCircularDependencies = value;
@@ -36,26 +45,35 @@ public class ComplexDIContainer implements DIContainer {
 		return this;
 	}
 
-	public <T> void register(Class<T> type) {
-		implementations.put(type, type);
-	}
-
-	public <T> void register(Class<T> type, Class<? extends T> implementationClass) {
-		implementations.put(type, implementationClass);
-	}
-
 	public <T> void register(T instance) {
-		instances.put(instance.getClass(), instance);
+		instances.put(instance.getClass(), weakReferences ? new WeakReference<T>(instance) : instance);
 	}
 
 	@Override
 	public <T> void register(Class<T> type, T instance) {
-		instances.put(type, instance);
+		instances.put(type, weakReferences ? new WeakReference<T>(instance) : instance);
 	}
 
+	private <T> T getInstance(Class<T> type) {
+		if (!instances.containsKey(type))
+			return null;
+
+		Object instance;
+		if (weakReferences) {
+			instance = ((WeakReference<?>)instances.get(type)).get();
+		} else {
+			instance = instances.get(type);
+		}
+
+		return (T) instance;
+	}
+
+	@SuppressWarnings("unchecked")
 	public <T> T resolve(Class<T> type) {
-		if (instances.containsKey(type))
-			return (T) instances.get(type);
+		T instance = getInstance(type);
+		if (instance != null) {
+			return getInstance(type);
+		}
 
 		// Construct instance
 		Constructor<?>[] constructors = type.getDeclaredConstructors();
@@ -63,7 +81,6 @@ public class ComplexDIContainer implements DIContainer {
 		if (constructors.length == 0)
 			throw new DependencyInjectionException("No constructors found for " + type.getName());
 
-		T instance;
 		Constructor<?> constructor = constructors[0];
 		try {
 			Object[] parameters = null;
@@ -84,7 +101,7 @@ public class ComplexDIContainer implements DIContainer {
 			throw new DependencyInjectionException("Failed to create instance of " + type.getName(), e);
 		}
 
-		instances.put(type, instance);
+		register(type, instance);
 		if (fieldInjection)
 			injectFields(instance);
 
@@ -150,8 +167,8 @@ public class ComplexDIContainer implements DIContainer {
 	}
 
 	private Object resolveDependency(Class<?> type) {
-		Object dependency = instances.get(type);
-		if (dependency == null && constructDependencies && implementations.containsKey(type)) {
+		Object dependency = getInstance(type);
+		if (dependency == null && constructDependencies) {
 			dependency = resolve(type);
 		}
 		return dependency;
