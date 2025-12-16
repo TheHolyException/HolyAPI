@@ -3,6 +3,9 @@ package de.theholyexception.holyapi.di;
 public class DITestClass3 {
 
 	@DIInject
-	public DITestClass4 testClass4;
+	private DITestClass4 testClass4;
 
+	public DITestClass4 getTestClass4() {
+		return testClass4;
+	}
 }
