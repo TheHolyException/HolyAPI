@@ -11,9 +11,7 @@ public class DITest {
 	@Test
 	@Order(1)
 	void simpleDI() {
-		AdvancedDIContainer container = new AdvancedDIContainer();
-
-		container.register(DITestClass1.class, DITestClass1.class);
+		DependencyInjector container = new DependencyInjector();
 		container.resolve(DITestClass1.class);
 		DITestClass2 t = container.resolve(DITestClass2.class);
 		container.register(DITestClass2.class, t);
@@ -24,19 +22,12 @@ public class DITest {
 	@Test
 	@Order(2)
 	void circularDI() {
-
-		ComplexDIContainer container = new ComplexDIContainer()
+		DependencyInjector container = new DependencyInjector()
 			.setResolveCircularDependencies(true);
 		container.register(DITestClass3.class);
 		container.register(DITestClass4.class);
 		DITestClass3 t3 = container.resolve(DITestClass3.class);
 		DITestClass4 t4 = container.resolve(DITestClass4.class);
-
-		System.out.println(t3);
-		System.out.println(t4);
-		System.out.println(t3.testClass4);
-		System.out.println(t4.testClass3);
-		System.out.println(t4.testClass3.testClass4);
 
 		assert t3.testClass4 == t4 && t4.testClass3 == t3;
 	}
@@ -44,8 +35,7 @@ public class DITest {
 	@Test
 	@Order(3)
 	void circularDIConstructorFieldMix() {
-
-		ComplexDIContainer container = new ComplexDIContainer()
+		DependencyInjector container = new DependencyInjector()
 			.setResolveCircularDependencies(true)
 			.setConstructorInjection(true);
 		container.register(DITestConstructor1.class);
@@ -53,21 +43,16 @@ public class DITest {
 		DITestConstructor1 t1 = container.resolve(DITestConstructor1.class);
 		DITestConstructor2 t2 = container.resolve(DITestConstructor2.class);
 
-		System.out.println(t1);
-		System.out.println(t2);
-		System.out.println(t2.testClass1);
-
 		assert t2.testClass1 == t1;
 	}
 
 	@Test
 	@Order(4)
 	void existingInstance() {
-		ComplexDIContainer container = new ComplexDIContainer()
+		DependencyInjector container = new DependencyInjector()
 			.setResolveCircularDependencies(true)
 			.setConstructorInjection(true);
 
-		container.register(DITestClass1.class, DITestClass1.class);
 		container.resolve(DITestClass1.class);
 
 		DITestClass2 t = new DITestClass2();
@@ -79,7 +64,7 @@ public class DITest {
 	@Test
 	@Order(5)
 	void privateConstructor() {
-		ComplexDIContainer container = new ComplexDIContainer()
+		DependencyInjector container = new DependencyInjector()
 			.setResolveCircularDependencies(true);
 		container.register(DITestClass1.class, new DITestClass1());
 		DITestPrivate1 instance = container.resolve(DITestPrivate1.class);
@@ -90,7 +75,7 @@ public class DITest {
 	@Test
 	@Order(6)
 	void weakReference() {
-		ComplexDIContainer container = new ComplexDIContainer(true).setResolveCircularDependencies(true);
+		DependencyInjector container = new DependencyInjector().setResolveCircularDependencies(true);
 		DITestClass1 tc1 = new DITestClass1();
 		WeakReference<DITestClass1> wr1 = new WeakReference<>(tc1);
 		container.register(tc1);
@@ -102,7 +87,7 @@ public class DITest {
 	@Test
 	@Order(7)
 	void weakReference2() {
-		ComplexDIContainer container = new ComplexDIContainer().setResolveCircularDependencies(true);
+		DependencyInjector container = new DependencyInjector(false).setResolveCircularDependencies(true);
 		DITestClass1 tc1 = new DITestClass1();
 		WeakReference<DITestClass1> wr1 = new WeakReference<>(tc1);
 		container.register(tc1);

@@ -6,41 +6,48 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
-public class ComplexDIContainer implements DIContainer {
+public class DependencyInjector implements DIContainer {
 
 	private final Map<Class<?>, Object> instances = new HashMap<>();
 	private final Map<Class<?>, List<FutureDependency>> futureDependencies = new HashMap<>();
-	private final boolean weakReferences;
 
+	private boolean weakReferences;
 	private boolean resolveCircularDependencies = false;
 	private boolean constructorInjection = false;
 	private boolean fieldInjection = true;
 	private boolean constructDependencies = false;
 
-	public ComplexDIContainer() {
-		this(false);
+	public DependencyInjector() {
+		this(true);
 	}
 
-	public ComplexDIContainer(boolean weakReferences) {
+	public DependencyInjector(boolean weakReferences) {
 		this.weakReferences = weakReferences;
 	}
 
-	public ComplexDIContainer setResolveCircularDependencies(boolean value) {
+	public DependencyInjector setResolveCircularDependencies(boolean value) {
 		this.resolveCircularDependencies = value;
 		return this;
 	}
 
-	public ComplexDIContainer setConstructorInjection(boolean value) {
+	public DependencyInjector setConstructorInjection(boolean value) {
 		this.constructorInjection = value;
 		return this;
 	}
 
-	public ComplexDIContainer setFieldInjection(boolean value) {
+	public DependencyInjector disableWeakReferences() {
+		if (!instances.isEmpty())
+			throw new IllegalStateException("Cannot disable weak references, there are existing instances registered! This can only be disabled at startup");
+		this.weakReferences = false;
+		return this;
+	}
+
+	public DependencyInjector setFieldInjection(boolean value) {
 		this.fieldInjection = value;
 		return this;
 	}
 
-	public ComplexDIContainer setConstructDependencies(boolean value) {
+	public DependencyInjector setConstructDependencies(boolean value) {
 		this.constructDependencies = value;
 		return this;
 	}
@@ -54,6 +61,7 @@ public class ComplexDIContainer implements DIContainer {
 		instances.put(type, weakReferences ? new WeakReference<T>(instance) : instance);
 	}
 
+	@SuppressWarnings("unchecked")
 	private <T> T getInstance(Class<T> type) {
 		if (!instances.containsKey(type))
 			return null;
@@ -68,14 +76,35 @@ public class ComplexDIContainer implements DIContainer {
 		return (T) instance;
 	}
 
-	@SuppressWarnings("unchecked")
+	/**
+	 * Resolves the instance of the given class in the dependency injector
+	 * it will construct a new instance if needed
+	 * This also inject fields / constructor dependency injection
+	 * @param type Class from wich the instance should be resolved
+	 * @return existing or new instance
+	 */
 	public <T> T resolve(Class<T> type) {
 		T instance = getInstance(type);
-		if (instance != null) {
+		if (instance != null)
 			return getInstance(type);
-		}
 
-		// Construct instance
+		instance = createInstance(type);
+
+		register(type, instance);
+		if (fieldInjection)
+			injectFields(instance);
+
+		// Check if the instance is needed in some future dependency
+		if (resolveCircularDependencies)
+			resolveFutureDependencies(instance, type);
+
+		if (instance instanceof DIInitializer)
+			((DIInitializer)instance).initialize();
+		return instance;
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> T createInstance(Class<T> type) {
 		Constructor<?>[] constructors = type.getDeclaredConstructors();
 
 		if (constructors.length == 0)
@@ -96,25 +125,13 @@ public class ComplexDIContainer implements DIContainer {
 			if (!constructor.isAccessible())
 				constructor.setAccessible(true);
 
-			instance = (T) constructor.newInstance(parameters);
+			return (T) constructor.newInstance(parameters);
 		} catch (Exception e) {
 			throw new DependencyInjectionException("Failed to create instance of " + type.getName(), e);
 		}
-
-		register(type, instance);
-		if (fieldInjection)
-			injectFields(instance);
-
-		// Check if the instance is needed in some future dependency
-		if (resolveCircularDependencies)
-			resolveCircularDependencies(instance, type);
-
-		if (instance instanceof DIInitializer)
-			((DIInitializer)instance).initialize();
-		return instance;
 	}
 
-	private void resolveCircularDependencies(Object instance, Class<?> type) {
+	private void resolveFutureDependencies(Object instance, Class<?> type) {
 		List<FutureDependency> dependencies = this.futureDependencies.get(type);
 		if (dependencies != null) {
 			for (FutureDependency dependency : dependencies) {
