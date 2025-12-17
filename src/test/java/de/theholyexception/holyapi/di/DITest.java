@@ -2,6 +2,8 @@ package de.theholyexception.holyapi.di;
 
 import org.junit.jupiter.api.*;
 
+import java.lang.ref.WeakReference;
+
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class DITest {
 
@@ -83,6 +85,30 @@ public class DITest {
 		DITestPrivate1 instance = container.resolve(DITestPrivate1.class);
 
 		assert instance.testClass1 != null;
+	}
+
+	@Test
+	@Order(6)
+	void weakReference() {
+		ComplexDIContainer container = new ComplexDIContainer(true).setResolveCircularDependencies(true);
+		DITestClass1 tc1 = new DITestClass1();
+		WeakReference<DITestClass1> wr1 = new WeakReference<>(tc1);
+		container.register(tc1);
+		tc1 = null;
+		System.gc();
+		assert wr1.get() == null;
+	}
+
+	@Test
+	@Order(7)
+	void weakReference2() {
+		ComplexDIContainer container = new ComplexDIContainer().setResolveCircularDependencies(true);
+		DITestClass1 tc1 = new DITestClass1();
+		WeakReference<DITestClass1> wr1 = new WeakReference<>(tc1);
+		container.register(tc1);
+		tc1 = null;
+		System.gc();
+		assert wr1.get() != null;
 	}
 
 }
