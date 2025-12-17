@@ -111,4 +111,12 @@ public class DITest {
 		assert wr1.get() != null;
 	}
 
+	@Test
+	@Order(8)
+	void unknownInstance() {
+		DependencyInjector container = new DependencyInjector();
+		DITestClass2 tc2 = container.resolve(DITestClass2.class);
+		assert tc2.testClass1 == null;
+	}
+
 }
